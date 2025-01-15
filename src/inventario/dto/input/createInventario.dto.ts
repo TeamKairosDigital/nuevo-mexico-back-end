@@ -6,7 +6,7 @@ export class createInventarioDto {
     id?: number;
 
     @ApiProperty({ description: 'código de inventario', example: '123' })
-    codigo: string;
+    codigo?: string;
 
     @ApiProperty({ description: 'Clasificación de inventario', example: '1' })
     idClasificacionProducto: number;

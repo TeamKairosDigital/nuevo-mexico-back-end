@@ -2,7 +2,7 @@ export class entradaInventariadoResponseDto {
     id: number;
     entrada: number;
     costo: number;
-    fecha: Date;
+    fecha: string;
 }
 
 export class inventarioResponseDto {
@@ -15,6 +15,6 @@ export class inventarioResponseDto {
     costo_inicial: number;
     cantidad_actual: number;
     precio_actual: number;
-    fecha: Date;
+    fecha: string;
     entradaInventariado: entradaInventariadoResponseDto[];
 }

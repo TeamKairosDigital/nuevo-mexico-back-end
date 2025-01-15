@@ -2,7 +2,7 @@ import { HttpStatus, Injectable, InternalServerErrorException, NotFoundException
 import { createApiResponse } from 'src/common/response/createApiResponse';
 import { Inventariado } from './entities/inv-inventariado.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { ClasificacionProducto } from './entities/inv-clasificaciones-productos.entity';
 import { Unidad } from './entities/inv-unidades.entity';
 import { ApiResponse } from 'src/common/response/ApiResponse';
@@ -56,7 +56,7 @@ export class InventarioService {
             }
     
             if (data.nombreProducto) {
-                where.nombre_producto = data.nombreProducto;
+                where.nombre_producto = Like(`%${data.nombreProducto}%`); // Permite coincidencias parciales
             }
     
             if (unidad) {
@@ -87,7 +87,7 @@ export class InventarioService {
                         id: entrada.id,
                         entrada: entrada.entrada,
                         costo: entrada.costo,
-                        fecha: this.formatFecha(inventario.fecha_creacion),
+                        fecha: this.formatFecha(entrada.fecha_creacion),
                     }))
                     : [],
             }));
@@ -160,7 +160,7 @@ export class InventarioService {
                 costo_inicial: inventario.costo_inicial,
                 cantidad_actual: inventario.cantidad_actual,
                 precio_actual: inventario.precio_actual,
-                fecha: inventario.fecha_creacion,
+                fecha: this.formatFecha(inventario.fecha_creacion),
                 entradaInventariado: [],
             };
 
@@ -291,7 +291,7 @@ export class InventarioService {
                 id: entradaInventariado.id,
                 entrada: entradaInventariado.entrada,
                 costo: entradaInventariado.costo,
-                fecha: entradaInventariado.fecha_creacion
+                fecha: this.formatFecha(entradaInventariado.fecha_creacion)
             };
 
             return createApiResponse<entradaInventariadoResponseDto>(true, 'Entrada obtenida correctamente', response, null, HttpStatus.OK);
@@ -413,7 +413,7 @@ export class InventarioService {
         }
     }
 
-    private async formatFecha(fecha: string | Date): Promise<string> {
+    private formatFecha(fecha: string | Date): string {
         const date = new Date(fecha);
         const opciones: Intl.DateTimeFormatOptions = {
             day: '2-digit',
