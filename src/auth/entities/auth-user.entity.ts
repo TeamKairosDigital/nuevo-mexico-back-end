@@ -4,6 +4,8 @@ import { ClasificacionProducto } from 'src/inventario/entities/inv-clasificacion
 import { Unidad } from 'src/inventario/entities/inv-unidades.entity';
 import { Inventariado } from 'src/inventario/entities/inv-inventariado.entity';
 import { EntradaInventariado } from 'src/inventario/entities/inv-entrada-inventariado.entity';
+import { Empleado } from 'src/rh/entities/rh-empleado.entity';
+import { TipoEmpleado } from 'src/rh/entities/rh-tipo-empleado.entity';
 
 @Entity('auth_Users')
 export class User {
@@ -39,11 +41,11 @@ export class User {
   @Column({ type: 'bigint' })
   usuario_modificacion: number;
 
-  // @OneToMany(() => Trabajador, (trabajador) => trabajador.usuario_creacion)
-  // trabajadores_creados: Trabajador[];
+  @OneToMany(() => Empleado, (empleado) => empleado.usuario_creacion)
+  empleado_creados: Empleado[];
 
-  // @OneToMany(() => Trabajador, (trabajador) => trabajador.usuario_modificacion)
-  // trabajadores_modificados: Trabajador[];
+  @OneToMany(() => Empleado, (empleado) => empleado.usuario_modificacion)
+  empleado_modificados: Empleado[];
 
   @OneToMany(() => ClasificacionProducto, (clasificacion) => clasificacion.usuario_creacion)
   clasificaciones_creadas: ClasificacionProducto[];
@@ -56,6 +58,12 @@ export class User {
 
   @OneToMany(() => EntradaInventariado, (entrada) => entrada.usuario_creacion)
   entradas_creadas: EntradaInventariado[];
+
+  @OneToMany(() => TipoEmpleado, (tipoEmpleado) => tipoEmpleado.usuario_creacion)
+  tipoEmpleado_creados: TipoEmpleado[];
+
+  @OneToMany(() => TipoEmpleado, (tipoEmpleado) => tipoEmpleado.usuario_modificacion)
+  tipoEmpleado_modificados: TipoEmpleado[];
   
 }
 

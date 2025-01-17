@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { JwtService } from '@nestjs/jwt';
 import { InventarioModule } from './inventario/inventario.module';
+import { RhModule } from './rh/rh.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { InventarioModule } from './inventario/inventario.module';
 
     AuthModule,
     InventarioModule,
+    RhModule
   ],
   controllers: [],
   providers: [JwtService],

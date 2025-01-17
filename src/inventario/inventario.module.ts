@@ -11,7 +11,7 @@ import { AuthModule } from 'src/auth/auth.module';
 @Module({
     imports: [
         TypeOrmModule.forFeature([Inventariado, EntradaInventariado, ClasificacionProducto, Unidad]),
-        forwardRef(() => AuthModule),
+        forwardRef(() => AuthModule)
     ],
     controllers: [InventarioController],
     providers: [InventarioService],

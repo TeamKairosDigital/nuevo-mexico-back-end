@@ -10,6 +10,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/auth-user.entity';
 import { Role } from './entities/auth-role.entity';
 import { InventarioModule } from 'src/inventario/inventario.module';
+import { RhModule } from 'src/rh/rh.module';
 
 @Module({
     imports: [
@@ -30,6 +31,7 @@ import { InventarioModule } from 'src/inventario/inventario.module';
         }),
         TypeOrmModule.forFeature([User, Role]),
         forwardRef(() => InventarioModule),
+        forwardRef(() => RhModule),
     ],
     controllers: [AuthController],
     providers: [AuthService, JwtStrategy, AuthGuard],
