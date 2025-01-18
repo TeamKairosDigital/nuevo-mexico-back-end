@@ -59,4 +59,10 @@ export class RhController {
         return response;
     }
 
+    @Get('getEmpleados')
+    async getEmpleados(): Promise<ApiResponse<itemsResponseDto[]>> {
+        const response = await this.rhService.getEmpleados();
+        return response;
+    }
+
 }

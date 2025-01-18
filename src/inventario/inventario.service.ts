@@ -131,20 +131,25 @@ export class InventarioService {
             inventario.precio_actual = data.costo_inicial;
             inventario.activo = true;
             inventario.usuario_creacion = user;
+            inventario.fecha_creacion = new Date();
             inventario.usuario_modificacion = user;
+            inventario.fecha_modificacion = new Date();
 
             await this.inventariadoRepository.save(inventario);
 
             return createApiResponse<inventarioResponseDto>(true, 'Producto creado correctamente', null, null, HttpStatus.CREATED);
         } catch (error) {
-            throw new InternalServerErrorException('Error al crear el producto');
+            throw error;
         }
     }
 
     // Obtener producto por ID
     async getInventarioById(id: number): Promise<ApiResponse<inventarioResponseDto>> {
         try {
-            const inventario = await this.inventariadoRepository.findOne({ where: { id: id } });
+            const inventario = await this.inventariadoRepository.findOne({ 
+                relations: ['clasificacion_producto', 'unidad'], 
+                where: { id: id } 
+            });
 
             if (!inventario) {
                 throw new NotFoundException(`Producto con ID ${id} no encontrado`);
@@ -154,8 +159,10 @@ export class InventarioService {
                 id: inventario.id,
                 codigo: inventario.codigo,
                 clasificacionProducto: inventario.clasificacion_producto.nombre,
+                idClasificacionProducto: inventario.clasificacion_producto.id,
                 nombre_producto: inventario.nombre_producto,
                 unidad: inventario.unidad.nombre,
+                idUnidad: inventario.unidad.id,
                 inventario_inicial: inventario.inventario_inicial,
                 costo_inicial: inventario.costo_inicial,
                 cantidad_actual: inventario.cantidad_actual,
@@ -197,44 +204,54 @@ export class InventarioService {
                 throw new NotFoundException(`Producto con ID ${data.id} no encontrado`);
             }
 
+            if(producto.inventario_inicial == 0 && producto.costo_inicial == 0 &&
+                producto.cantidad_actual == 0 && producto.precio_actual == 0){
+                producto.inventario_inicial = data.inventario_inicial;
+                producto.costo_inicial = data.costo_inicial;
+                producto.cantidad_actual = data.inventario_inicial;
+                producto.precio_actual = data.costo_inicial;
+            }
+
             producto.codigo = data.codigo;
             producto.clasificacion_producto = clasificacionProducto;
             producto.nombre_producto = data.nombre_producto;
             producto.unidad = unidad;
-            // producto.inventario_inicial = data.inventario_inicial;
-            // producto.costo_inicial = data.costo_inicial;
-            // producto.cantidad_actual = data.cantidad_actual;
-            // producto.precio_actual = data.precio_actual;
             producto.usuario_modificacion = user;
+            producto.fecha_modificacion = new Date();
 
             await this.inventariadoRepository.save(producto);
 
             return createApiResponse<inventarioResponseDto>(true, 'Producto actualizado correctamente', null, null, HttpStatus.OK);
         } catch (error) {
-            throw new InternalServerErrorException('Error al actualizar el producto');
+            throw error;
         }
     }
 
     // Eliminar producto para inventario
     async deleteInventario(id: number): Promise<ApiResponse<any>> {
         try {
+
+            // const entradaInventariado = await this.entradaInventariadoRepository.findOne({ where: { producto: producto } });
+
+            // if (entradaInventariado) {
+            //     throw new InternalServerErrorException(`No se puede eliminar el producto porque tiene entradas en inventario`);
+            // }
+
+            // if (entradaInventariado) {
+            //     await this.entradaInventariadoRepository.delete(entradaInventariado);
+            // }
+
             const producto = await this.inventariadoRepository.findOne({ where: { id: id } });
 
             if (!producto) {
                 throw new NotFoundException(`Producto con ID ${id} no encontrado`);
             }
 
-            const entradaInventariado = await this.entradaInventariadoRepository.findOne({ where: { producto: producto } });
+            producto.activo = false;
 
-            // if (entradaInventariado) {
-            //     throw new InternalServerErrorException(`No se puede eliminar el producto porque tiene entradas en inventario`);
-            // }
+            await this.inventariadoRepository.save(producto);
 
-            if (entradaInventariado) {
-                await this.entradaInventariadoRepository.delete(entradaInventariado);
-            }
-
-            await this.inventariadoRepository.delete(producto);
+            // await this.inventariadoRepository.delete(producto);
 
             return createApiResponse<inventarioResponseDto>(true, 'Producto eliminado correctamente', null, null, HttpStatus.OK);
         } catch (error) {
@@ -426,6 +443,129 @@ export class InventarioService {
         };
         return date.toLocaleString('es-ES', opciones).replace(',', '');
     }
+
+    // Ventas
+    // Lista de ventas
+    // async getListVentas(data: filterVentaDto): Promise<ApiResponse<ventaResponseDto[]>> {
+    //     try {
+    //         // Obtener las entidades relacionadas, si se proporcionan los IDs en el filtro
+    //         const clasificacionProducto = data.idClasificacionProducto 
+    //             ? await this.clasificacionProductoRepository.findOne({ where: { id: data.idClasificacionProducto } }) 
+    //             : null;
     
+    //         const unidad = data.idUnidad 
+    //             ? await this.unidadRepository.findOne({ where: { id: data.idUnidad } }) 
+    //             : null;
+    
+    //         // Construir los filtros dinámicamente
+    //         const where: any = {
+    //             activo: true, // Aseguramos que solo se obtengan los elementos activos
+    //         };
+    
+    //         if (data.codigo) {
+    //             where.codigo = data.codigo;
+    //         }
+    
+    //         if (clasificacionProducto) {
+    //             where.clasificacion_producto = clasificacionProducto;
+    //         }
+    
+    //         if (data.nombreProducto) {
+    //             where.nombre_producto = Like(`%${data.nombreProducto}%`); // Permite coincidencias parciales
+    //         }
+    
+    //         if (unidad) {
+    //             where.unidad = unidad;
+    //         }
+    
+    //         // Consulta al repositorio con las relaciones correspondientes
+    //         const inventario = await this.inventariadoRepository.find({
+    //             relations: ['clasificacion_producto', 'unidad', 'entradaInventariado'],
+    //             where: where,
+    //             order: { id: 'ASC' },
+    //         });
+    
+    //         // Mapear los datos para devolverlos en la respuesta
+    //         const listData = inventario.map((inventario) => ({
+    //             id: inventario.id,
+    //             codigo: inventario.codigo,
+    //             clasificacionProducto: inventario.clasificacion_producto?.nombre || null,
+    //             nombre_producto: inventario.nombre_producto,
+    //             unidad: inventario.unidad?.nombre || null,
+    //             inventario_inicial: inventario.inventario_inicial,
+    //             costo_inicial: inventario.costo_inicial,
+    //             cantidad_actual: inventario.cantidad_actual,
+    //             precio_actual: inventario.precio_actual,
+    //             fecha: this.formatFecha(inventario.fecha_creacion),
+    //         }));
+    
+    //         return createApiResponse<inventarioResponseDto[]>(true, 'Lista obtenida correctamente', listData, null, HttpStatus.OK);
+    //     } catch (error) {
+    //         throw new InternalServerErrorException('Error al obtener la lista de inventario');
+    //     }
+    // }
+
+    // Producto
+    // Crear producto para inventario
+    // async createVenta(data: createVentaDto): Promise<ApiResponse<any>> {
+    //     try {
+    //         const clasificacionProducto = await this.clasificacionProductoRepository.findOne({ where: { id: data.idClasificacionProducto } });
+
+    //         if (!clasificacionProducto) {
+    //             throw new NotFoundException(`Clasificación del producto con ID ${data.idClasificacionProducto} no encontrado`);
+    //         }
+
+    //         const unidad = await this.unidadRepository.findOne({ where: { id: data.idUnidad } });
+
+    //         if (!unidad) {
+    //             throw new NotFoundException(`Unidad con ID ${data.idUnidad} no encontrada`);
+    //         }
+
+    //         const user = await this.userRepository.findOne({ where: { id: data.idUsuario } });
+
+    //         if (!user) {
+    //             throw new NotFoundException(`Usuario con ID ${data.idUsuario} no encontrada`);
+    //         }
+            
+    //         const inventario = new Inventariado();
+    //         inventario.codigo = data.codigo;
+    //         inventario.clasificacion_producto = clasificacionProducto;
+    //         inventario.nombre_producto = data.nombre_producto;
+    //         inventario.unidad = unidad;
+    //         inventario.inventario_inicial = data.inventario_inicial;
+    //         inventario.costo_inicial = data.costo_inicial;
+    //         inventario.cantidad_actual = data.inventario_inicial;
+    //         inventario.precio_actual = data.costo_inicial;
+    //         inventario.activo = true;
+    //         inventario.usuario_creacion = user;
+    //         inventario.fecha_creacion = new Date();
+    //         inventario.usuario_modificacion = user;
+    //         inventario.fecha_modificacion = new Date();
+
+    //         await this.inventariadoRepository.save(inventario);
+
+    //         return createApiResponse<inventarioResponseDto>(true, 'Producto creado correctamente', null, null, HttpStatus.CREATED);
+    //     } catch (error) {
+    //         throw error;
+    //     }
+    // }
+    
+    // Obtener lista de inventariado
+    async getInventario(): Promise <ApiResponse<itemsResponseDto[]>> {
+        try {
+            const productos = await this.inventariadoRepository.find({ where: { activo: true } });
+
+            const response = productos.map(producto => ({
+                id: producto.id,
+                nombre: producto.nombre_producto,
+            }));
+
+            return createApiResponse<itemsResponseDto[]>(true, 'Lista de productos obtenida correctamente', response, null, HttpStatus.OK);
+        } catch (error) {
+            throw new InternalServerErrorException('Error al acceder la lista de clasificiacion de productos');
+        }
+    }
+
+
 
 }

@@ -9,7 +9,7 @@ export class CreateEmpleadoDto {
     codigo_empleado: string;
 
     @ApiProperty({ description: 'Tipo de empleado', example: '123' })
-    idTipoEmpelado: number;
+    idTipoEmpleado: number;
 
     @ApiProperty({ description: 'Nombre de empleado', example: '1' })
     nombre_Empleado: string;

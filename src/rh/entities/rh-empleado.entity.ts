@@ -32,17 +32,17 @@ export class Empleado {
     @Column({ type: 'tinyint' })
     activo: boolean;
 
-    @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+    @Column({ type: 'datetime' })
     fecha_creacion: Date;
 
-    @ManyToOne(() => User)
+    @ManyToOne(() => User, (user) => user.id)
     @JoinColumn({ name: 'usuario_creacion' })
     usuario_creacion: User;
 
-    @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
+    @Column({ type: 'datetime' })
     fecha_modificacion: Date;
 
-    @ManyToOne(() => User)
+    @ManyToOne(() => User, (user) => user.id)
     @JoinColumn({ name: 'usuario_modificacion' })
     usuario_modificacion: User;
 }

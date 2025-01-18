@@ -21,7 +21,10 @@ export class AuthService {
 
     async validateUser(username: string, password: string): Promise<ApiResponse<loginResponseDto>> {
 
-        const user = await this.findByUsername(username);
+        const user = await this.UsersRepository.findOne({ 
+            relations: ['role'], 
+            where: { user_name: username } 
+        });;
         if (!user) {
             // Lanzar excepción 404 si el usuario no se encuentra
             throw new NotFoundException('Usuario no encontrado');
@@ -40,6 +43,7 @@ export class AuthService {
         userDataDto.id = user.id;
         userDataDto.username = user.user_name;
         userDataDto.nombre = user.nombre;
+        userDataDto.rol = user.role.nombre;
         userDataDto.access_token = token;
     
         // Devolver la respuesta de éxito

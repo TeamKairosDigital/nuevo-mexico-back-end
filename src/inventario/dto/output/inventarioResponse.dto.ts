@@ -9,8 +9,10 @@ export class inventarioResponseDto {
     id: number;
     codigo: string;
     clasificacionProducto: string;
+    idClasificacionProducto?: number;
     nombre_producto: string;
     unidad: string;
+    idUnidad?: number;
     inventario_inicial: number;
     costo_inicial: number;
     cantidad_actual: number;
