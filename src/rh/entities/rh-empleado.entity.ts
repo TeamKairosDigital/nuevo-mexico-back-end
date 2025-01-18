@@ -1,6 +1,7 @@
 import { User } from 'src/auth/entities/auth-user.entity';
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { TipoEmpleado } from './rh-tipo-empleado.entity';
+import { TiendaCocina } from 'src/inventario/entities/inv-tienda-cocina.entity';
 
 @Entity('rh_empleado')
 export class Empleado {
@@ -45,4 +46,7 @@ export class Empleado {
     @ManyToOne(() => User, (user) => user.id)
     @JoinColumn({ name: 'usuario_modificacion' })
     usuario_modificacion: User;
+
+    @OneToMany(() => TiendaCocina, (tiendaCocina) => tiendaCocina.empleado_id)
+    tiendaCocina_empleado: TiendaCocina[];
 }

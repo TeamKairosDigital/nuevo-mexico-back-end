@@ -3,6 +3,7 @@ import { User } from 'src/auth/entities/auth-user.entity';
 import { ClasificacionProducto } from './inv-clasificaciones-productos.entity';
 import { Unidad } from './inv-unidades.entity';
 import { EntradaInventariado } from './inv-entrada-inventariado.entity';
+import { TiendaCocina } from './inv-tienda-cocina.entity';
 
 @Entity('inv_inventariado')
 export class Inventariado {
@@ -54,6 +55,9 @@ export class Inventariado {
 
   @OneToMany(() => EntradaInventariado, (entrada) => entrada.producto)
   entradaInventariado: EntradaInventariado[];
+
+  @OneToMany(() => TiendaCocina, (tiendaCocina) => tiendaCocina.producto_id)
+  tiendaCocina_producto: TiendaCocina[];
 
 }
 

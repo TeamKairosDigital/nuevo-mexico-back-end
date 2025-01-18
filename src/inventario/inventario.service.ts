@@ -13,6 +13,11 @@ import { EntradaInventariado } from './entities/inv-entrada-inventariado.entity'
 import { User } from 'src/auth/entities/auth-user.entity';
 import { createEntradaInventarioDto } from './dto/input/createEntradaInventario.dto';
 import { itemsResponseDto } from './dto/output/itemsResponse.dto';
+import { filterVentaDto } from './dto/input/filterVenta.dto';
+import { Empleado } from 'src/rh/entities/rh-empleado.entity';
+import { TiendaCocina } from './entities/inv-tienda-cocina.entity';
+import { ventaResponseDto } from './dto/output/ventaResponse.dto';
+import { createVentaDto } from './dto/input/createVenta.dto';
 
 @Injectable()
 export class InventarioService {
@@ -28,6 +33,10 @@ export class InventarioService {
         private entradaInventariadoRepository: Repository<EntradaInventariado>,
         @InjectRepository(User)
         private userRepository: Repository<User>,
+        @InjectRepository(Empleado)
+        private empleadoRepository: Repository<Empleado>,
+        @InjectRepository(TiendaCocina)
+        private tiendaCocinaRepository: Repository<TiendaCocina>,
     ) { }
 
     // Lista de inventario
@@ -446,119 +455,124 @@ export class InventarioService {
 
     // Ventas
     // Lista de ventas
-    // async getListVentas(data: filterVentaDto): Promise<ApiResponse<ventaResponseDto[]>> {
-    //     try {
-    //         // Obtener las entidades relacionadas, si se proporcionan los IDs en el filtro
-    //         const clasificacionProducto = data.idClasificacionProducto 
-    //             ? await this.clasificacionProductoRepository.findOne({ where: { id: data.idClasificacionProducto } }) 
-    //             : null;
+    async getListVentas(data: filterVentaDto): Promise<ApiResponse<ventaResponseDto[]>> {
+        try {
+            // Obtener las entidades relacionadas, si se proporcionan los IDs en el filtro
+            const empleado = data.idEmpleado 
+                ? await this.empleadoRepository.findOne({ where: { id: data.idEmpleado } }) 
+                : null;
     
-    //         const unidad = data.idUnidad 
-    //             ? await this.unidadRepository.findOne({ where: { id: data.idUnidad } }) 
-    //             : null;
+            const producto = data.idProducto
+                ? await this.inventariadoRepository.findOne({ where: { id: data.idProducto } }) 
+                : null;
     
-    //         // Construir los filtros dinámicamente
-    //         const where: any = {
-    //             activo: true, // Aseguramos que solo se obtengan los elementos activos
-    //         };
+            // Construir los filtros dinámicamente
+            const where: any = {
+                activo: true, // Aseguramos que solo se obtengan los elementos activos
+            };
     
-    //         if (data.codigo) {
-    //             where.codigo = data.codigo;
-    //         }
+            if (empleado) {
+                where.empleado_id = empleado;
+            }
+
+            if (producto) {
+                where.producto_id = producto;
+            }
     
-    //         if (clasificacionProducto) {
-    //             where.clasificacion_producto = clasificacionProducto;
-    //         }
+            // if (data.nombreProducto) {
+            //     where.nombre_producto = Like(`%${data.nombreProducto}%`); // Permite coincidencias parciales
+            // }
+
+            // if (data.codigo) {
+            //     where.codigo = data.codigo;
+            // }
     
-    //         if (data.nombreProducto) {
-    //             where.nombre_producto = Like(`%${data.nombreProducto}%`); // Permite coincidencias parciales
-    //         }
+            // Consulta al repositorio con las relaciones correspondientes
+            const tiendaCocina = await this.tiendaCocinaRepository.find({
+                relations: ['empleado_id', 'producto_id', 'usuario_creacion','usuario_modificacion'],
+                where: where,
+                order: { id: 'ASC' },
+            });
     
-    //         if (unidad) {
-    //             where.unidad = unidad;
-    //         }
+            // Mapear los datos para devolverlos en la respuesta
+            const listData = tiendaCocina.map((venta) => ({
+                id: venta.id,
+                codigoEmpleado: venta.empleado_id.codigo_empleado,
+                nombreEmpleado: venta.empleado_id?.nombre,
+                cantidadUnidad: venta.cantidad,
+                idProducto: venta.producto_id.id,
+                nombreProducto: venta.producto_id.nombre_producto,
+                // precioSugerido: venta.,
+                montoTotal: venta.montoTotal,
+                pagoEfectivo: venta.pagoEfectivo,
+                fechaCracion: this.formatFecha(venta.fechaCreacion),
+            }));
     
-    //         // Consulta al repositorio con las relaciones correspondientes
-    //         const inventario = await this.inventariadoRepository.find({
-    //             relations: ['clasificacion_producto', 'unidad', 'entradaInventariado'],
-    //             where: where,
-    //             order: { id: 'ASC' },
-    //         });
-    
-    //         // Mapear los datos para devolverlos en la respuesta
-    //         const listData = inventario.map((inventario) => ({
-    //             id: inventario.id,
-    //             codigo: inventario.codigo,
-    //             clasificacionProducto: inventario.clasificacion_producto?.nombre || null,
-    //             nombre_producto: inventario.nombre_producto,
-    //             unidad: inventario.unidad?.nombre || null,
-    //             inventario_inicial: inventario.inventario_inicial,
-    //             costo_inicial: inventario.costo_inicial,
-    //             cantidad_actual: inventario.cantidad_actual,
-    //             precio_actual: inventario.precio_actual,
-    //             fecha: this.formatFecha(inventario.fecha_creacion),
-    //         }));
-    
-    //         return createApiResponse<inventarioResponseDto[]>(true, 'Lista obtenida correctamente', listData, null, HttpStatus.OK);
-    //     } catch (error) {
-    //         throw new InternalServerErrorException('Error al obtener la lista de inventario');
-    //     }
-    // }
+            return createApiResponse<ventaResponseDto[]>(true, 'Lista obtenida correctamente', listData, null, HttpStatus.OK);
+        } catch (error) {
+            throw new InternalServerErrorException('Error al obtener la lista de inventario');
+        }
+    }
 
     // Producto
     // Crear producto para inventario
-    // async createVenta(data: createVentaDto): Promise<ApiResponse<any>> {
-    //     try {
-    //         const clasificacionProducto = await this.clasificacionProductoRepository.findOne({ where: { id: data.idClasificacionProducto } });
+    async createVenta(data: createVentaDto): Promise<ApiResponse<any>> {
+        try {
+            const empleado = await this.empleadoRepository.findOne({ where: { id: data.empleado_id } });
 
-    //         if (!clasificacionProducto) {
-    //             throw new NotFoundException(`Clasificación del producto con ID ${data.idClasificacionProducto} no encontrado`);
-    //         }
+            if (!empleado) {
+                throw new NotFoundException(`Empleado con ID ${data.empleado_id} no encontrado`);
+            }
 
-    //         const unidad = await this.unidadRepository.findOne({ where: { id: data.idUnidad } });
+            const producto = await this.inventariadoRepository.findOne({ where: { id: data.producto_id } });
 
-    //         if (!unidad) {
-    //             throw new NotFoundException(`Unidad con ID ${data.idUnidad} no encontrada`);
-    //         }
+            if (!producto) {
+                throw new NotFoundException(`Producto con ID ${data.producto_id} no encontrada`);
+            }
 
-    //         const user = await this.userRepository.findOne({ where: { id: data.idUsuario } });
+            const user = await this.userRepository.findOne({ where: { id: data.idUsuario } });
 
-    //         if (!user) {
-    //             throw new NotFoundException(`Usuario con ID ${data.idUsuario} no encontrada`);
-    //         }
+            if (!user) {
+                throw new NotFoundException(`Usuario con ID ${data.idUsuario} no encontrada`);
+            }
             
-    //         const inventario = new Inventariado();
-    //         inventario.codigo = data.codigo;
-    //         inventario.clasificacion_producto = clasificacionProducto;
-    //         inventario.nombre_producto = data.nombre_producto;
-    //         inventario.unidad = unidad;
-    //         inventario.inventario_inicial = data.inventario_inicial;
-    //         inventario.costo_inicial = data.costo_inicial;
-    //         inventario.cantidad_actual = data.inventario_inicial;
-    //         inventario.precio_actual = data.costo_inicial;
-    //         inventario.activo = true;
-    //         inventario.usuario_creacion = user;
-    //         inventario.fecha_creacion = new Date();
-    //         inventario.usuario_modificacion = user;
-    //         inventario.fecha_modificacion = new Date();
+            const venta = new TiendaCocina();
+            venta.empleado_id = empleado;
+            venta.producto_id = producto;
+            venta.cantidad = data.cantidad;
+            venta.montoTotal = data.montoTotal;
+            venta.pagoEfectivo = data.pagoEfectivo;
+            venta.activo = true;
+            venta.usuario_creacion = user;
+            venta.fechaCreacion = new Date();
+            venta.usuario_modificacion = user;
+            venta.fechaModificacion = new Date();
 
-    //         await this.inventariadoRepository.save(inventario);
+            await this.tiendaCocinaRepository.save(venta);
 
-    //         return createApiResponse<inventarioResponseDto>(true, 'Producto creado correctamente', null, null, HttpStatus.CREATED);
-    //     } catch (error) {
-    //         throw error;
-    //     }
-    // }
+            //CREAR LOGÍCA PARA DESCONTAR EN INVENTARIO
+
+            return createApiResponse<any>(true, 'Venta creado correctamente', null, null, HttpStatus.CREATED);
+        } catch (error) {
+            throw error;
+        }
+    }
     
     // Obtener lista de inventariado
     async getInventario(): Promise <ApiResponse<itemsResponseDto[]>> {
         try {
-            const productos = await this.inventariadoRepository.find({ where: { activo: true } });
+            // const productos = await this.inventariadoRepository.find({ where: { activo: true } });
+            const productos = await this.inventariadoRepository
+                                    .createQueryBuilder('producto')
+                                    .where('producto.activo = :activo', { activo: true })
+                                    .andWhere('producto.cantidad_actual > :cantidad', { cantidad: 0 })
+                                    .getMany();
 
             const response = productos.map(producto => ({
                 id: producto.id,
                 nombre: producto.nombre_producto,
             }));
+            //const response = productos ? { id: productos.id, nombre: productos.nombre_producto } : null; // Maneja el caso donde no haya resultados
 
             return createApiResponse<itemsResponseDto[]>(true, 'Lista de productos obtenida correctamente', response, null, HttpStatus.OK);
         } catch (error) {

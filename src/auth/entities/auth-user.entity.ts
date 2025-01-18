@@ -6,6 +6,7 @@ import { Inventariado } from 'src/inventario/entities/inv-inventariado.entity';
 import { EntradaInventariado } from 'src/inventario/entities/inv-entrada-inventariado.entity';
 import { Empleado } from 'src/rh/entities/rh-empleado.entity';
 import { TipoEmpleado } from 'src/rh/entities/rh-tipo-empleado.entity';
+import { TiendaCocina } from 'src/inventario/entities/inv-tienda-cocina.entity';
 
 @Entity('auth_Users')
 export class User {
@@ -64,6 +65,12 @@ export class User {
 
   @OneToMany(() => TipoEmpleado, (tipoEmpleado) => tipoEmpleado.usuario_modificacion)
   tipoEmpleado_modificados: TipoEmpleado[];
+
+  @OneToMany(() => TiendaCocina, (tiendaCocina) => tiendaCocina.usuario_creacion)
+  tiendaCocina_creados: TiendaCocina[];
+
+  @OneToMany(() => TiendaCocina, (tiendaCocina) => tiendaCocina.usuario_modificacion)
+  tiendaCocina_modificados: TiendaCocina[];
   
 }
 
