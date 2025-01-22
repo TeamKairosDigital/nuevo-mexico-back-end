@@ -7,6 +7,9 @@ import { createInventarioDto } from './dto/input/createInventario.dto';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/guards/auth.guard';
 import { itemsResponseDto } from './dto/output/itemsResponse.dto';
+import { filterVentaDto } from './dto/input/filterVenta.dto';
+import { ventaResponseDto } from './dto/output/ventaResponse.dto';
+import { createVentaDto } from './dto/input/createVenta.dto';
 
 @UseGuards(AuthGuard)
 @ApiBearerAuth()
@@ -99,6 +102,25 @@ export class InventarioController {
         const response = await this.inventarioService.getClasificacionProductos();
         return response;
     }
-    
+
+
+    // Ventas
+    @Get('getListVentas')
+    async getListVentas(@Query() data: filterVentaDto): Promise<ApiResponse<ventaResponseDto[]>> {
+        const response = await this.inventarioService.getListVentas(data);
+        return response;
+    }
+
+    @Post('createVenta')
+    async createVenta(@Body() data: createVentaDto): Promise<ApiResponse<any>> {
+        const response = await this.inventarioService.createVenta(data);
+        return response
+    }
+
+    @Get('getInventario')
+    async getInventario(): Promise<ApiResponse<itemsResponseDto[]>> {
+        const response = await this.inventarioService.getInventario();
+        return response;
+    }
 
 }

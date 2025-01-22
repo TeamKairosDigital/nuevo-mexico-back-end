@@ -7,11 +7,14 @@ import { Unidad } from './entities/inv-unidades.entity';
 import { InventarioController } from './inventario.controller';
 import { InventarioService } from './inventario.service';
 import { AuthModule } from 'src/auth/auth.module';
+import { TiendaCocina } from './entities/inv-tienda-cocina.entity';
+import { RhModule } from 'src/rh/rh.module';
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([Inventariado, EntradaInventariado, ClasificacionProducto, Unidad]),
-        forwardRef(() => AuthModule)
+        TypeOrmModule.forFeature([Inventariado, EntradaInventariado, ClasificacionProducto, Unidad, TiendaCocina]),
+        forwardRef(() => AuthModule),
+        forwardRef(() => RhModule)
     ],
     controllers: [InventarioController],
     providers: [InventarioService],

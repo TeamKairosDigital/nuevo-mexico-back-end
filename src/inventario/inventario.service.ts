@@ -414,45 +414,6 @@ export class InventarioService {
         }
     }
 
-    // Calcular inventario de producto cantidad actual y precio actual
-    private async calculateInventario(data: createEntradaInventarioDto): Promise<any> {
-        try {
-
-            const producto = await this.inventariadoRepository.findOne({ where: { id: data.id_producto } });
-
-            if (!producto) {
-                throw new NotFoundException(`Producto con ID ${data.id} no encontrado`);
-            }
-
-            let sumCantidad = producto.cantidad_actual + data.entrada;
-            let sumPrecio = (producto.precio_actual * producto.cantidad_actual) + (data.costo * data.entrada);
-
-            let promedio = sumPrecio / sumCantidad;
-
-            producto.cantidad_actual = sumCantidad;
-            producto.precio_actual = promedio;
-            await this.inventariadoRepository.save(producto);
-
-            return createApiResponse<inventarioResponseDto>(true, 'Producto actualizado correctamente', null, null, HttpStatus.OK);
-        } catch (error) {
-            throw new InternalServerErrorException('Error al actualizar el producto');
-        }
-    }
-
-    private formatFecha(fecha: string | Date): string {
-        const date = new Date(fecha);
-        const opciones: Intl.DateTimeFormatOptions = {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false,
-        };
-        return date.toLocaleString('es-ES', opciones).replace(',', '');
-    }
-
     // Ventas
     // Lista de ventas
     async getListVentas(data: filterVentaDto): Promise<ApiResponse<ventaResponseDto[]>> {
@@ -518,39 +479,45 @@ export class InventarioService {
     // Crear producto para inventario
     async createVenta(data: createVentaDto): Promise<ApiResponse<any>> {
         try {
+            const user = await this.userRepository.findOne({ where: { id: data.idUsuario } });
+
+            if (!user) {
+                throw new NotFoundException(`Usuario con ID ${data.idUsuario} no encontrada`);
+            }
+
             const empleado = await this.empleadoRepository.findOne({ where: { id: data.empleado_id } });
 
             if (!empleado) {
                 throw new NotFoundException(`Empleado con ID ${data.empleado_id} no encontrado`);
             }
 
-            const producto = await this.inventariadoRepository.findOne({ where: { id: data.producto_id } });
+            data.listaProductos.forEach(async element => {
 
-            if (!producto) {
-                throw new NotFoundException(`Producto con ID ${data.producto_id} no encontrada`);
-            }
+                const producto = await this.inventariadoRepository.findOne({ where: { id: element.producto_id } });
 
-            const user = await this.userRepository.findOne({ where: { id: data.idUsuario } });
+                if (!producto) {
+                    throw new NotFoundException(`Producto con ID ${element.producto_id} no encontrada`);
+                }
+    
+                const venta = new TiendaCocina();
+                venta.empleado_id = empleado;
+                venta.producto_id = producto;
+                venta.precioVenta = producto.precio_actual;
+                venta.cantidad = element.cantidad;
+                venta.montoTotal = element.montoTotal;
+                venta.pagoEfectivo = element.cantidad;
+                venta.activo = true;
+                venta.usuario_creacion = user;
+                venta.fechaCreacion = new Date();
+                venta.usuario_modificacion = user;
+                venta.fechaModificacion = new Date();
+    
+                await this.tiendaCocinaRepository.save(venta);
 
-            if (!user) {
-                throw new NotFoundException(`Usuario con ID ${data.idUsuario} no encontrada`);
-            }
-            
-            const venta = new TiendaCocina();
-            venta.empleado_id = empleado;
-            venta.producto_id = producto;
-            venta.cantidad = data.cantidad;
-            venta.montoTotal = data.montoTotal;
-            venta.pagoEfectivo = data.pagoEfectivo;
-            venta.activo = true;
-            venta.usuario_creacion = user;
-            venta.fechaCreacion = new Date();
-            venta.usuario_modificacion = user;
-            venta.fechaModificacion = new Date();
-
-            await this.tiendaCocinaRepository.save(venta);
-
-            //CREAR LOGÍCA PARA DESCONTAR EN INVENTARIO
+                //CREAR LOGÍCA PARA DESCONTAR EN INVENTARIO
+                this.discountInventory(producto, element.cantidad, element.cantidad);
+                
+            });
 
             return createApiResponse<any>(true, 'Venta creado correctamente', null, null, HttpStatus.CREATED);
         } catch (error) {
@@ -571,6 +538,8 @@ export class InventarioService {
             const response = productos.map(producto => ({
                 id: producto.id,
                 nombre: producto.nombre_producto,
+                precio_actual: producto.precio_actual,
+                cantidad_actual: producto.cantidad_actual
             }));
             //const response = productos ? { id: productos.id, nombre: productos.nombre_producto } : null; // Maneja el caso donde no haya resultados
 
@@ -580,6 +549,60 @@ export class InventarioService {
         }
     }
 
+    // Calcular inventario de producto cantidad actual y precio actual
+    private async calculateInventario(data: createEntradaInventarioDto): Promise<any> {
+        try {
 
+            const producto = await this.inventariadoRepository.findOne({ where: { id: data.id_producto } });
+
+            if (!producto) {
+                throw new NotFoundException(`Producto con ID ${data.id} no encontrado`);
+            }
+
+            let sumCantidad = producto.cantidad_actual + data.entrada;
+            let sumPrecio = (producto.precio_actual * producto.cantidad_actual) + (data.costo * data.entrada);
+
+            let promedio = sumPrecio / sumCantidad;
+
+            producto.cantidad_actual = sumCantidad;
+            producto.precio_actual = promedio;
+            await this.inventariadoRepository.save(producto);
+
+            return createApiResponse<inventarioResponseDto>(true, 'Producto actualizado correctamente', null, null, HttpStatus.OK);
+        } catch (error) {
+            throw new InternalServerErrorException('Error al actualizar el producto');
+        }
+    }
+
+    private formatFecha(fecha: string | Date): string {
+        const date = new Date(fecha);
+        const opciones: Intl.DateTimeFormatOptions = {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false,
+        };
+        return date.toLocaleString('es-ES', opciones).replace(',', '');
+    }
+
+    private async discountInventory(producto: Inventariado, cantidad: number, pagoEfectivo: number){
+
+        // Restamos cantidad acutal - cantidad que se seleccion por el producto
+        producto.cantidad_actual = producto.cantidad_actual - cantidad;
+
+        // Multiplicamos la cantidad actual del producto * el precio actual del producto - la cantidad del pago en efectivo
+        let precioTotal = (producto.cantidad_actual * producto.precio_actual) - pagoEfectivo;
+
+        // Dividmos el precio calculado / producto de cantidad actual restado
+        let precioCalculado = precioTotal / producto.cantidad_actual;
+
+        producto.precio_actual = precioCalculado;
+
+        await this.inventariadoRepository.save(producto);
+
+    }
 
 }

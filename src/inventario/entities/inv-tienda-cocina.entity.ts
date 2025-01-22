@@ -26,6 +26,9 @@ import { Inventariado } from './inv-inventariado.entity';
   
     @Column({ type: 'int' })
     cantidad: number;
+
+    @Column({ type: 'decimal', precision: 10, scale: 2 })
+    precioVenta: number;
   
     @Column({ type: 'decimal', precision: 10, scale: 2 })
     montoTotal: number;

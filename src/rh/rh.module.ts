@@ -5,11 +5,13 @@ import { Empleado } from './entities/rh-empleado.entity';
 import { TipoEmpleado } from './entities/rh-tipo-empleado.entity';
 import { AuthModule } from 'src/auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { InventarioModule } from 'src/inventario/inventario.module';
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([Empleado, TipoEmpleado]),
-        forwardRef(() => AuthModule)
+        forwardRef(() => AuthModule),
+        forwardRef(() => InventarioModule)
     ],
   providers: [RhService],
   controllers: [RhController],
